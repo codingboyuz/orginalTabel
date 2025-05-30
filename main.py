@@ -1,6 +1,7 @@
 import csv
 import glob
 import os
+import shutil
 import sys
 from PyQt5.QtWidgets import *
 import control
@@ -11,6 +12,9 @@ import appMain
 import appMonth
 import appOtpustBsBalnichniy
 import tabel
+from romove_folder import remove_folder
+
+path = os.path.expanduser('~/Downloads')  # Yoki kerakli yo'lni kiriting
 
 class DialogApp(QWidget):
     def __init__(self):
@@ -56,6 +60,7 @@ class DialogApp(QWidget):
         w = tabel.Window()
         w.show()
 
+
     def gotonewapplication(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
@@ -63,16 +68,25 @@ class DialogApp(QWidget):
         msg.setWindowTitle("Tabelni shakllantirish")
         msg.setWindowIcon(QtGui.QIcon('config/logo.png'))
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        if (msg.exec_() == 1024):
+
+        if msg.exec_() == QMessageBox.Ok:
             download_all_files = []
-            download_path = '../../Downloads'
-            csv_files = glob.glob(download_path + "/*.csv")
+
+            # Fayllarni olish
+            # path = os.path.expanduser('~/Downloads')
+            csv_files = glob.glob(os.path.join(path, "*.csv"))
+            print(f"csv_file: {csv_files}")
+
             for file in csv_files:
-                if file[16:29] == "Все события _":
+                file = os.path.normpath(file)
+                if os.path.basename(file).startswith("Все события _"):
                     download_all_files.append(file)
+                    print(f"download_all_files: {download_all_files}")
+
                     dir_year = file[29:33]
                     dir_month = file[33:35]
-                    path_for_exists = "database/" + dir_year + "/" + dir_month
+                    path_for_exists = os.path.join("database", dir_year, dir_month)
+
                     if not os.path.exists(path_for_exists):
                         os.makedirs(path_for_exists)
 
@@ -80,43 +94,49 @@ class DialogApp(QWidget):
                 year = file[29:33]
                 month = file[33:35]
                 number = file[29:43]
-                path_for_saving = "database/" + year + "/" + month + "/"
-                read_csv_file = "Все события _" + number + ".csv"
-                save_csv_file = "allreport_" + number + ".csv"
-                if (len(os.listdir(path_for_saving)) == 0):
-                    with open("../../Downloads/" + read_csv_file, 'r', encoding="utf8") as read_file:
-                        with open(path_for_saving + save_csv_file, 'w', encoding="utf8") as write_file:
+
+                self.year = year
+                self.month = month
+                self.number = number
+
+                path_for_saving = os.path.join("database", year, month)
+                read_csv_file = os.path.basename(file)
+                save_csv_file = f"allreport_{number}.csv"
+
+                if len(os.listdir(path_for_saving)) == 0:
+                    with open(os.path.join(path, read_csv_file), 'r', encoding="utf8") as read_file:
+                        with open(os.path.join(path_for_saving, save_csv_file), 'w', encoding="utf8") as write_file:
                             next(read_file)
                             for line in read_file:
                                 write_file.write(line)
                 else:
-                    old_csv_files = glob.glob(path_for_saving + "*.csv")
+                    old_csv_files = glob.glob(os.path.join(path_for_saving, "*.csv"))
                     check = True
                     for old_file in old_csv_files:
+                        old_file = os.path.basename(old_file)
                         old_year = old_file[27:31]
                         old_month = old_file[31:33]
                         old_number = old_file[27:41]
 
                         if old_month == month and int(old_number) < int(number):
                             check = False
-                            with open("../../Downloads/" + read_csv_file, 'r', encoding="utf8") as read_file:
-                                with open(path_for_saving + save_csv_file, 'w', encoding="utf8") as write_file:
+                            with open(os.path.join(path, read_csv_file), 'r', encoding="utf8") as read_file:
+                                with open(os.path.join(path_for_saving, save_csv_file), 'w',
+                                          encoding="utf8") as write_file:
                                     next(read_file)
                                     for line in read_file:
                                         write_file.write(line)
-                            os.remove(path_for_saving + "allreport_" + old_number + ".csv")
+                            os.remove(os.path.join(path_for_saving, f"allreport_{old_number}.csv"))
                     if check:
-                        with open("../../Downloads/" + read_csv_file, 'r', encoding="utf8") as read_file:
-                            with open(path_for_saving + save_csv_file, 'w', encoding="utf8") as write_file:
+                        with open(os.path.join(path, read_csv_file), 'r', encoding="utf8") as read_file:
+                            with open(os.path.join(path_for_saving, save_csv_file), 'w', encoding="utf8") as write_file:
                                 next(read_file)
                                 for line in read_file:
                                     write_file.write(line)
 
-            # app = QApplication(sys.argv)
-            # mainApp = appMonth.monthApp()
-            # mainApp.show()
-            # app.exec_()
-            tabel.tabel(year, month, number)
+            # Qo'shimcha funksiya chaqiriladi
+            tabel.tabel(self.year, self.month, self.number)
+
 
     def get_checked_late(self):
         msg = QMessageBox()
@@ -127,8 +147,8 @@ class DialogApp(QWidget):
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         if (msg.exec_() == 1024):
             download_all_files = []
-            download_path = '../../Downloads'
-            csv_files = glob.glob(download_path + "/*.csv")
+
+            csv_files = glob.glob(path + "/*.csv")
             for file in csv_files:
                 if file[16:34] == "События за сегодня":
                     download_all_files.append(file)
@@ -152,7 +172,7 @@ class DialogApp(QWidget):
                 save_csv_file = "report_" + number + ".csv"
 
                 if (len(os.listdir(path_for_saving)) == 0):
-                    with open("../../Downloads/" + read_csv_file, 'rb', encoding="utf8") as read_file:
+                    with open(path + read_csv_file, 'rb', encoding="utf8") as read_file:
                         with open(path_for_saving + save_csv_file, 'wb', encoding="utf8") as write_file:
                             next(read_file)
                             for line in read_file:
@@ -169,7 +189,7 @@ class DialogApp(QWidget):
 
                         if old_day == day and int(old_number) < int(number):
                             check = False
-                            with open("../../Downloads/" + read_csv_file, 'r', encoding="utf8") as read_file:
+                            with open(path + read_csv_file, 'r', encoding="utf8") as read_file:
                                 with open(path_for_saving + save_csv_file, 'w', encoding="utf8") as write_file:
                                     next(read_file)
                                     for line in read_file:
@@ -185,7 +205,7 @@ class DialogApp(QWidget):
                                 os.remove("database/pdf_ontime/" + year + "/" + month + "/pdf_" + old_number + ".pdf")
 
                     if check:
-                        with open("../../Downloads/" + read_csv_file, 'r', encoding="utf8") as read_file:
+                        with open(path + read_csv_file, 'r', encoding="utf8") as read_file:
                             with open(path_for_saving + save_csv_file, 'w', encoding="utf8") as write_file:
                                 next(read_file)
                                 print(read_file)
@@ -325,9 +345,8 @@ class DialogApp(QWidget):
             else:
                 self.message("Ushbu kun uchun ma'lumotlar topilmadi", "Info", QMessageBox.Ok)
 
-    #ishchilarni yangilish
     def get_new_workers(self):
-
+        remove_folder()
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
         msg.setText("Ишчилар рўйхатини янгилайсизми?")
@@ -335,30 +354,57 @@ class DialogApp(QWidget):
         msg.setWindowIcon(QtGui.QIcon('config/logo.png'))
         msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 
-        if (msg.exec_() == 1024):
-            old_path = 'database'
-            old_csv_file = glob.glob(old_path + "/*.csv")
-            max_csv = old_csv_file[0][17:31]
-            path = '../../Downloads'
-            csv_files = glob.glob(path + "/*.csv")
+        if (msg.exec_() == QMessageBox.Ok):
+            old_path = os.path.join(os.getcwd(), 'database')  # Database yo'lini olish
+            old_csv_file = glob.glob(os.path.join(old_path, "*.csv"))
+            max_csv = None
+
+            if old_csv_file:
+                # Using regular expression to extract only the numeric part
+                import re
+                max_csv_match = re.search(r'(\d+)', old_csv_file[0])
+                if max_csv_match:
+                    max_csv = max_csv_match.group()
+
+            path = os.path.expanduser('~/Downloads')  # Foydalanuvchi yuklamalar papkasi
+            csv_files = glob.glob(os.path.join(path, "Сотрудник_*.csv"))
+            print(f"Downloads papkasidagi CSV fayllar: {csv_files}")
+
+            if not csv_files:
+                self.message("Downloads papkasida ham hech qanday 'Сотрудник_*.csv' fayli topilmadi.", "Xato",
+                             QMessageBox.Ok)
+                return
+
             for file_name in csv_files:
-                files_name = file_name.rsplit("\\")
-                if (files_name[1][:9] == "Сотрудник"):
-                    new_file_number = files_name[1][10:24]
-                    if int(max_csv) < int(new_file_number):
+                files_name = os.path.basename(file_name).split("_")
+                if len(files_name) > 1:
+                    new_file_number = files_name[1][:14]
+                    print(f"Yangi fayl raqami: {new_file_number}")
+                    if not max_csv or int(max_csv) < int(new_file_number):
                         max_csv = new_file_number
-            if (max_csv == old_csv_file[0][17:31]):
+
+            if max_csv and old_csv_file and max_csv == old_csv_file[0][17:31]:
                 self.message("Ishchilar ro'yxati yangilanmadi. Yangi ro'yxatni yuklang.", "Info", QMessageBox.Ok)
-            else:
-                new_file_name = "Сотрудник_" + max_csv + ".csv"
-                delete_file_name = "workers_" + old_csv_file[0][17:31] + ".csv"
-                os.remove("database/" + delete_file_name)
-                update_file_name = "workers_" + max_csv + ".csv"
-                with open("../../Downloads/" + new_file_name, 'r', encoding="utf8") as new_file:
-                    with open("database/" + update_file_name, 'w', encoding="utf8") as update_file:
-                        next(new_file)
+            elif max_csv:
+                new_file_name = f"Сотрудник_{max_csv}.csv"
+                print(f"Tanlangan yangi fayl: {new_file_name}")
+
+                # Eski faylni o'chirish agar mavjud bo'lsa
+                if old_csv_file:
+                    delete_file_name = f"workers_{old_csv_file[0][17:31]}.csv"
+                    os.remove(os.path.join(old_path, delete_file_name))
+
+                # Yangi faylni saqlash
+                update_file_name = f"workers_{max_csv}.csv"
+                with open(os.path.join(path, new_file_name), 'r', encoding="utf8") as new_file:
+                    with open(os.path.join(old_path, update_file_name), 'w', encoding="utf8") as update_file:
+                        next(new_file)  # Birinchi qatorni tashlab o'tkazadi
                         for line in new_file:
                             update_file.write(line)
+
+                self.message("Ishchilar ro'yxati muvaffaqiyatli yangilandi!", "Muvaffaqiyat", QMessageBox.Ok)
+            else:
+                self.message("Hech qanday mos keluvchi fayl topilmadi.", "Xato", QMessageBox.Ok)
 
     def message(self, txt, title, button):
         msgInfo = QMessageBox()
@@ -370,6 +416,10 @@ class DialogApp(QWidget):
         msgInfo.exec()
 
 
+# 90 144 72 24
+
+
+
 # def main():
 #     app = QApplication(sys.argv)
 #     controller = control.Controller()
@@ -378,6 +428,14 @@ class DialogApp(QWidget):
 
 if __name__ == '__main__':
     # main()
+
+
+
+    # for file in os.listdir(folder_path):
+    #     file_path = os.path.join(folder_path, file)
+    #
+    #     if os.path.isfile(file_path):
+    #         os.remove(file_path)  # Faylni o‘chirish
     app = QApplication(sys.argv)
     mainApp = DialogApp()
     mainApp.show()

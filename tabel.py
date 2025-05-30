@@ -9,6 +9,9 @@ from reportlab.pdfbase.ttfonts import TTFont
 import glob
 import collections
 import datetime
+import os
+
+desktop = os.path.expanduser('~/Desktop')
 
 
 def tabel(year_path, month_path, number):
@@ -49,7 +52,10 @@ def tabel(year_path, month_path, number):
         return Paragraph(StringGuy(text), styles['Normal'])
 
     pdfmetrics.registerFont(TTFont('DejaVuSerif', 'config/DejaVuSerif.ttf', 'UTF-8'))
-    document = SimpleDocTemplate("../../Desktop/Tabel" + ".pdf", pagesize=landscape(A3), title="Tabel", author='kadr')
+    print("=====================================================================================")
+    print(f"{desktop}/Tabel" + ".pdf", )
+    document = SimpleDocTemplate(f"{desktop}/Tabel" + ".pdf", pagesize=landscape(A3), title="Tabel", author='kadr')
+    print(document)
     # base_document = SimpleDocTemplate(url_file + doc_name + ".pdf", pagesize=A4, title=doc_name, author='kadr')
     # base_story_info = []
     story_info = []
@@ -94,6 +100,7 @@ def tabel(year_path, month_path, number):
              ParagGuy("30"),
              # ParagGuy("31")
              ]
+
     # sanashni esingdan chiqardingmi
 
     pdf_table.append(title)
@@ -112,13 +119,13 @@ def tabel(year_path, month_path, number):
                 # print(alldata[item + 1][0:10])
             if key + "exit" == alldata[item]:
                 dataExit.append(alldata[item + 1])
-        # print(dataEnter)
-        # print(dataExit)
+        print(dataEnter)
+        print(dataExit)
         row.append(ParagGuy(k))
         row.append(ParagGuy(allworkers[key]))
         for day in range(1, 31):  # aytilgan sanadan bir kun ko'p olasan
             error = 1
-            week = datetime.date(2024, 3, day).weekday()  # oy bu
+            week = datetime.date(2025, 5, day).weekday()  # oy bu
             # if week == 5 or week == 6:
             #     error = 0
             cometime = "23:59:59"
@@ -127,7 +134,7 @@ def tabel(year_path, month_path, number):
                 d = "0" + str(day)
             else:
                 d = str(day)
-            validDate = "2024-03-" + d  # bu ham oy
+            validDate = "2025-05-" + d  # bu ham oy
             comecounter = 0
             outcounter = 0
             for search in dataEnter:
@@ -184,7 +191,7 @@ def tabel(year_path, month_path, number):
                 # # bera kimga yordam qilsang kiritasan
                 # if allworkers[key] == "" and (
                 #         3 <= day <= 7 or 10 <= day <= 14 or 17 <= day <= 20 or 25 <= day <= 28):
-                    # delta = 9
+                # delta = 9
                 # if allworkers[key] == "Илёс Омаров" and (
                 #         3 <= day <= 7 or 10 <= day <= 14 or 17 <= day <= 20 or 25 <= day <= 28):
                 #     delta = 9

@@ -67,6 +67,7 @@ class DialogApp(QWidget):
             download_all_files = []
             download_path = '../../Downloads'
             csv_files = glob.glob(download_path + "/*.csv")
+            print(f"csv: {csv_files}")
             for file in csv_files:
                 if file[16:29] == "Все события _":
                     download_all_files.append(file)
